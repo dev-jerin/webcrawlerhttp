@@ -1,14 +1,19 @@
 const { JSDOM } = require('jsdom')
 
 async function crawlPage(baseURL, currentURL, pages){
-  // if this is an offsite URL, bail immediately
   const currentUrlObj = new URL(currentURL)
   const baseUrlObj = new URL(baseURL)
+  const normalizedURL = normalizeURL(currentURL)
+
+  // if this is an offsite URL, count it as external and return
   if (currentUrlObj.hostname !== baseUrlObj.hostname){
+    if (pages[normalizedURL] > 0){
+      pages[normalizedURL]++
+    } else {
+      pages[normalizedURL] = 1
+    }
     return pages
   }
-  
-  const normalizedURL = normalizeURL(currentURL)
 
   // if we've already visited this page
   // just increase the count and don't repeat
@@ -42,8 +47,10 @@ async function crawlPage(baseURL, currentURL, pages){
   }
 
   const nextURLs = getURLsFromHTML(htmlBody, baseURL)
-  for (const nextURL of nextURLs){
-    pages = await crawlPage(baseURL, nextURL, pages)
+  const promises = nextURLs.map(nextURL => crawlPage(baseURL, nextURL, pages))
+  const results = await Promise.all(promises)
+  for (const result of results) {
+    pages = { ...pages, ...result }
   }
 
   return pages
