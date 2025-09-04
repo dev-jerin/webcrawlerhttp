@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Crawler GUI</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Web Crawler</h1>
+    <form id="crawl-form">
+      <div class="form-group">
+        <label for="url-input">Enter URL to crawl:</label>
+        <input type="url" id="url-input" placeholder="https://example.com" required>
+      </div>
+      <button type="submit" id="crawl-btn">Start Crawling</button>
+    </form>
+    <div id="loading" class="loading">Crawling... Please wait.</div>
+    <div id="error" class="error"></div>
+    <div id="results" class="results">
+      <h2>Crawl Results</h2>
+      <div id="results-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('crawl-form');
+    const urlInput = document.getElementById('url-input');
+    const crawlBtn = document.getElementById('crawl-btn');
+    const loading = document.getElementById('loading');
+    const errorDiv = document.getElementById('error');
+    const resultsDiv = document.getElementById('results');
+    const resultsList = document.getElementById('results-list');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = urlInput.value.trim();
+
+      if (!url) return;
+
+      // Show loading
+      loading.style.display = 'block';
+      errorDiv.style.display = 'none';
+      resultsDiv.style.display = 'none';
+      crawlBtn.disabled = true;
+
+      try {
+        const response = await fetch('/crawl', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          displayResults(data.pages);
+        } else {
+          showError(data.error || 'An error occurred');
+        }
+      } catch (err) {
+        showError('Failed to connect to server');
+      } finally {
+        loading.style.display = 'none';
+        crawlBtn.disabled = false;
+      }
+    });
+
+    function displayResults(pages) {
+      resultsList.innerHTML = '';
+      if (pages.length === 0) {
+        resultsList.innerHTML = '<p>No pages found.</p>';
+      } else {
+        pages.forEach(([url, count]) => {
+          const item = document.createElement('div');
+          item.className = 'result-item';
+          item.innerHTML = `
+            <span class="url">${url}</span>
+            <span class="count">${count}</span>
+          `;
+          resultsList.appendChild(item);
+        });
+      }
+      resultsDiv.style.display = 'block';
+    }
+
+    function showError(message) {
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
