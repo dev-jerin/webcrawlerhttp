@@ -8,6 +8,8 @@ const PORT = 3000;
 
 // Middleware to parse JSON
 app.use(express.json());
+
+// Serve static files from 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve index.html
